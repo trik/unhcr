@@ -55,7 +55,7 @@ function UserLocation(map, options) {
 
 UserLocation.prototype.__proto__ = events.EventEmitter.prototype;
 
-// set user location - update marker
+// set user location - update marker - changes map center and zoom
 // l - L.LatLng
 UserLocation.prototype.setLocation = function(l) {
     if(!l instanceof L.LatLng) return;
@@ -64,7 +64,8 @@ UserLocation.prototype.setLocation = function(l) {
     this._updateMarker();
     this.emit('user-location-updated', {
         location: this.getLocation()
-    })
+    });
+    this.map.setView(this.getLocation(), 9);
 };
 
 // get user location
