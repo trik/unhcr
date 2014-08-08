@@ -226,12 +226,12 @@ jQuery.getJSON( "src/compiled.json", function( data ) {
                                      {icon: iconObjects[feature.properties.activityCategory]});
         serviceMarker.addTo(clusterLayer);
 
+        // Add the marker to the feature object, so we can re-use the same marker during render().
+        feature.properties.marker = serviceMarker;
+
         // Make the popup, and bind it to the marker.  Add the service's unique ID
         // as a classname; we'll use it later for the "Show details" action.
         serviceMarker.bindPopup(renderServiceText(feature, "marker"), {className:feature.id});
-
-        // Add the marker to the feature object, so we can re-use the same marker during render().
-        feature.properties.marker = serviceMarker;
     });
 
     // Add the new data to the crossfilter.
@@ -275,6 +275,17 @@ function getUserLocation() {
 // Set user's location with lat/lng coming from gps or manual selection
 function updateMyLocation(l) {
     myLocation.setLocation(l);
+    orderListByDistance(l);
+}
+
+function orderListByDistance(l) {
+    clusterLayer.eachLayer(function(o) {
+        $("#list article[data-leaflet-id="+L.stamp(o)+"]").attr("data-distance", l.distanceTo(o.getLatLng()));
+    });
+
+    $("#list > article").sort(function(a, b) {
+        return parseFloat($(a).attr('data-distance')) > parseFloat($(b).attr('data-distance')) ? 1 : -1;
+    }).appendTo($("#list"));
 }
 
 // Clear the data and re-render.
@@ -463,6 +474,6 @@ function renderServiceText(feature, style) {
     // Assemble the article content (for list view only).
     var content = (style == 'list') ? '<div class="content" id="details-' + feature.id + '">' + contentOutput + '<div class="comments">' + comments + '</div></div>' : '';
 
-    return '<article class="serviceText"' + articleID + '>' + header + toggleLink + content + '</article>';
+    return '<article data-leaflet-id="'+feature.properties.marker._leaflet_id+'" class="serviceText"' + articleID + '>' + header + toggleLink + content + '</article>';
 }
 
