@@ -34,7 +34,7 @@ map.on('load', function() {
 });
 
 // Initialize the empty layer for the markers, and add it to the map.
-var clusterLayer = new L.MarkerClusterGroup({zoomToBoundsOnClick: false, spiderfyDistanceMultiplier: 2})
+var clusterLayer = new L.MarkerClusterGroup({zoomToBoundsOnClick: false, spiderfyDistanceMultiplier: 2, showCoverageOnHover: false})
     .addTo(map);
 // When user clicks on a cluster, zoom directly to its bounds.  If we don't do this,
 // they have to click repeatedly to zoom in enough for the cluster to spiderfy.
@@ -206,6 +206,8 @@ map.on('popupopen', function(e){
     $("#show-details-" + id).click(function() {
         // If "show details" is clicked, expand the corresponding item in the still-hidden list view.
         $("#article-" + id).addClass('expand');
+        // Since the article is expanded, the details toggle link should say "Hide details".
+        $("#article-" + id).find('.show-details').html("Hide details");
         // Switch to list view.
         $("#map-list-toggler").click();
         // Scroll to the item.
@@ -317,6 +319,12 @@ function render() {
     $(".serviceText > header").click(function(event) {
       event.preventDefault();
       $(this).parent().toggleClass('expand');
+      // Toggle the text of the "Show details" / "Hide details" link
+      if ($(this).find('.show-details').html() === "Show details") {
+        $(this).find('.show-details').html("Hide details");
+      } else {
+        $(this).find('.show-details').html("Show details");  
+      } 
     });
 
     // Bind "show on map" behavior.  Do this here because now the list exists.
@@ -325,7 +333,7 @@ function render() {
         var id = e.target.id;
         // Close any popups that are open already.
         map.closePopup();
-        // Fire the toggler click event, to switch to viewing the map.
+        // Fire the map/list toggler click event, to switch to viewing the map.
         $("#map-list-toggler").click();
         // Pan and zoom the map.
         map.panTo(markers[id]._latlng);
@@ -348,7 +356,7 @@ function renderServiceText(feature, style) {
     // Get the partner logo, if any.
     partnerName = feature.properties.partnerName;
     var logo = partnerName;
-    var logoUrl = '/src/images/partner/' + partnerName.toLowerCase().replace(' ', '') + '.jpg';
+    var logoUrl = './src/images/partner/' + partnerName.toLowerCase().replace(' ', '') + '.jpg';
     var http = new XMLHttpRequest();
     http.open('HEAD', logoUrl, false);
     http.send();
@@ -455,25 +463,27 @@ function renderServiceText(feature, style) {
 
     // In the list view only, the articles must have unique IDs so that we can scroll directly to them
     // when someone clicks the "Show details" link in a map marker.
-    var articleID = '';
-    var toggleLink = '<a id="show-details-' + feature.id + '" href="#">Show details</a>';
+    var articleIDattribute = '';
+    var toggleLinks = '<a id="show-details-' + feature.id + '" href="#">Show details</a>';
     // If this is for a marker popup, add a "Show details" link that will take us to the list view.
     if (style == 'list') {
         // Whereas if this if for list view, add a link to show this item on the map.
-        toggleLink = '<a class="show-on-map" id="' + feature.id + '" href="#">Show on map</a>';
-        articleID = ' id="article-' + feature.id + '"';
+        toggleLinks = '<a class="show-on-map" id="' + feature.id + '" href="#">Show on map</a> ' +
+                '<a class="show-details" id="show-details-' + feature.id + '" href="#">Show details</a> ';
+        activityInfoLink = '<a class="show-activity-info" href="https://www.syrianrefugeeresponse.org/resources/sites/points?feature=' + feature.id + '">Show on ActivityInfo</a>';
+        articleIDattribute = ' id="article-' + feature.id + '"';
     }
 
     // Assemble the article header.
-    var header = '<header>' + logo + '<h3>' + glyph + feature.properties.locationName + '</h3>' + '<p class="hours">' + hours + '</p>' + headerOutput + '</header>';
+    var header = '<header>' + logo + '<h3>' + glyph + feature.properties.locationName + '</h3>' + toggleLinks + '<p class="hours">' + hours + '</p>' + headerOutput + '</header>';
 
     // Preserve the line breaks in the original comment, but strip extra breaks from beginning and end.
     var comments = feature.properties.comments ?
         feature.properties.comments.trim().replace(/\r\n|\n|\r/g, '<br />') : '';
 
     // Assemble the article content (for list view only).
-    var content = (style == 'list') ? '<div class="content" id="details-' + feature.id + '">' + contentOutput + '<div class="comments">' + comments + '</div></div>' : '';
+    var content = (style == 'list') ? '<div class="content" id="details-' + feature.id + '">' + contentOutput + '<div class="comments">' + comments + '</div>' + activityInfoLink + '</div>' : '';
 
-    return '<article data-leaflet-id="'+feature.properties.marker._leaflet_id+'" class="serviceText"' + articleID + '>' + header + toggleLink + content + '</article>';
+    return '<article data-leaflet-id="'+feature.properties.marker._leaflet_id+'" class="serviceText"' + articleIDattribute + '>' + header + content + '</article>';
 }
 
